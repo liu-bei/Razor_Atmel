@@ -136,6 +136,158 @@ State Machine Function Definitions
 /* Wait for ??? */
 static void UserApp1SM_Idle(void)
 {
+  static u16 au16NotesRight[]    = {F5, F5, F5, F5, F5, E5, D5, E5, F5, G5, A5, A5, A5, A5, A5, G5, F5, G5, A5, A5S, C6, F5, F5, D6, C6, A5S, A5, G5, F5, NO, NO};
+  static u16 au16DurationRight[] = {QN, QN, HN, EN, EN, EN, EN, EN, EN, QN, QN, QN, HN, EN, EN, EN, EN, EN, EN, QN,  HN, HN, EN, EN, EN, EN,  QN, QN, HN, HN, FN};
+  static u16 au16NoteTypeRight[] = {RT, RT, HT, RT, RT, RT, RT, RT, RT, RT, RT, RT, HT, RT, RT, RT, RT, RT, RT, RT,  RT, HT, RT, RT, RT, RT,  RT, RT, RT, HT, HT};
+  static u8 u8IndexRight = 0;
+  static u32 u32RightTimer = 0;
+  static u16 u16CurrentDurationRight = 0;
+  static u16 u16NoteSilentDurationRight = 0;
+  static bool bNoteActiveNextRight = TRUE;
+
+  u8 u8CurrentIndex;
+  
+    if(IsTimeUp(&u32RightTimer, (u32)u16CurrentDurationRight))
+  {
+    u32RightTimer = G_u32SystemTime1ms;
+    u8CurrentIndex = u8IndexRight;
+    
+    /* Set up to play current note */
+    if(bNoteActiveNextRight)
+    {
+     if(au16NoteTypeRight[u8CurrentIndex] == RT)
+      {
+        u16CurrentDurationRight = au16DurationRight[u8CurrentIndex] - REGULAR_NOTE_ADJUSTMENT;
+        u16NoteSilentDurationRight = REGULAR_NOTE_ADJUSTMENT;
+        bNoteActiveNextRight = FALSE;
+      } /* end RT case */
+    
+      else if(au16NoteTypeRight[u8CurrentIndex] == ST)
+      {
+        u16CurrentDurationRight = STACCATO_NOTE_TIME;
+        u16NoteSilentDurationRight = au16DurationRight[u8CurrentIndex] - STACCATO_NOTE_TIME;
+        bNoteActiveNextRight = FALSE;
+      } /* end ST case */
+
+      else if(au16NoteTypeRight[u8CurrentIndex] == HT)
+      {
+        u16CurrentDurationRight = au16DurationRight[u8CurrentIndex];
+        u16NoteSilentDurationRight = 0;
+        bNoteActiveNextRight = TRUE;
+
+        u8IndexRight++;
+        if(u8IndexRight == sizeof(au16NotesRight) / sizeof(u16) )
+        {
+          u8IndexRight = 0;
+        }
+      } /* end HT case */
+
+      /* Set the buzzer frequency for the note (handle NO special case) */
+      if(au16NotesRight[u8CurrentIndex] != NO)
+      {
+        PWMAudioSetFrequency(BUZZER1, au16NotesRight[u8CurrentIndex]);
+        PWMAudioOn(BUZZER1);
+      }
+      else
+      {                
+        PWMAudioOff(BUZZER1);
+      }
+    } /* end if(bNoteActiveNextRight) */
+    else
+    {
+      /* No active note */
+      PWMAudioOff(BUZZER1);
+      u32RightTimer = G_u32SystemTime1ms;
+      u16CurrentDurationRight = u16NoteSilentDurationRight;
+      bNoteActiveNextRight = TRUE;
+ 
+      u8IndexRight++;
+      if(u8IndexRight == sizeof(au16NotesRight) / sizeof(u16) )
+      {
+        u8IndexRight = 0;
+      }
+    } /* end else if(bNoteActiveNextRight) */
+  } /* end if(IsTimeUp(&u32RightTimer, (u32)u16CurrentDurationRight)) */
+
+ 
+  
+ static u16 u16BlinkCount=0;
+ static u8  u8Counter=1;
+ static u16 u8Return=0;
+ int i; 
+
+ if(u8Counter!=10000)
+ { 
+   u16BlinkCount++;
+
+  for(i=0;i<100;i++)
+   {
+     if(u8Counter==1)
+    {
+    LedOn(BLUE);
+    LedOff(CYAN);
+    LedOff(PURPLE);
+    LedOff(WHITE);
+    }
+   else
+     LedOff(BLUE);
+    if(u8Counter==2)
+    {
+    LedOn(PURPLE);
+    LedOff(CYAN);
+    LedOff(BLUE);
+    LedOff(WHITE);
+    }
+   else
+     LedOff(PURPLE);
+    if(u8Counter==3)
+    {
+    LedOn(WHITE);
+    LedOff(CYAN);
+    LedOff(BLUE);
+    LedOff(PURPLE);
+    }
+   else
+     LedOff(WHITE);
+  }
+
+  {   if(WasButtonPressed(BUTTON2))
+ {
+ u8Return=1;
+ ButtonAcknowledge(BUTTON2);
+ }
+ if(WasButtonPressed(BUTTON1))
+ {
+ u8Return=2;
+  ButtonAcknowledge(BUTTON1);
+ }
+ if(WasButtonPressed(BUTTON0))
+ {
+ u8Return=3;
+  ButtonAcknowledge(BUTTON0);
+ }
+  }
+   if(u16BlinkCount==600)
+  { 
+   u16BlinkCount=0;
+   if (u8Return==u8Counter)
+  {
+    i=u8Counter;
+    u8Counter=rand()%3+1;
+    while(i==u8Counter)
+    {u8Counter=rand()%3+1;}
+   }
+ else
+  {  
+   LCDCommand(LCD_CLEAR_CMD);
+   u8 au8Message[] = "(Try Again!)"; 
+   LCDMessage(LINE1_START_ADDR, au8Message);
+   LedOn(RED);
+   u8Counter=10000;   
+   
+   }
+}
+}
 
 } /* end UserApp1SM_Idle() */
     
